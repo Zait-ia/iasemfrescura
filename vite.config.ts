@@ -9,7 +9,6 @@ export default defineConfig(({mode}) => {
     plugins: [react(), tailwindcss()],
     define: {
       'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY),
-      'process.env.WAITLIST_SHEET_URL': JSON.stringify(env.WAITLIST_SHEET_URL),
     },
     publicDir: 'src/public',
     resolve: {

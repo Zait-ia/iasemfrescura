@@ -16,43 +16,6 @@ import {
 } from 'lucide-react';
 import { StarsBackground } from './StarsBackground';
 
-// ── Vagas de mentoria — atualizar conforme vendas ──
-const MENTORIA_VAGAS_PREENCHIDAS = 10;
-const MENTORIA_VAGAS_TOTAL = 10;
-const MENTORIA_ESGOTADA = MENTORIA_VAGAS_PREENCHIDAS >= MENTORIA_VAGAS_TOTAL;
-
-function getLoteInfo() {
-  const now = new Date();
-  const lote1Start = new Date('2026-05-16');
-  const lote1End = new Date('2026-05-18');
-  const lote2End = new Date('2026-05-24');
-  const lote3End = new Date('2026-06-05');
-
-  if (now < lote1Start) {
-    return { lote: 1, price: '59,90', percent: 12, nextPrice: '79,90' };
-  } else if (now < lote1End) {
-    const total = lote1End.getTime() - lote1Start.getTime();
-    const elapsed = now.getTime() - lote1Start.getTime();
-    const progress = elapsed / total;
-    const percent = Math.round(15 + progress * 75);
-    return { lote: 1, price: '59,90', percent, nextPrice: '79,90' };
-  } else if (now < lote2End) {
-    const total = lote2End.getTime() - lote1End.getTime();
-    const elapsed = now.getTime() - lote1End.getTime();
-    const progress = elapsed / total;
-    const percent = Math.round(5 + progress * 30);
-    return { lote: 2, price: '79,90', percent, nextPrice: '97,90' };
-  } else if (now < lote3End) {
-    const total = lote3End.getTime() - lote2End.getTime();
-    const elapsed = now.getTime() - lote2End.getTime();
-    const progress = elapsed / total;
-    const percent = Math.round(7 + progress * 30);
-    return { lote: 3, price: '97,90', percent, nextPrice: null };
-  } else {
-    return { lote: 3, price: '97,90', percent: 95, nextPrice: null };
-  }
-}
-
 const JourneyMilestone = ({ icon: Icon, title, time, schedule, description, details, side = 'left', active, onClick, caseExtra }: any) => {
   return (
     <div className={`relative flex flex-col md:flex-row items-center justify-between w-full mb-12 md:mb-40 ${side === 'right' ? 'md:flex-row-reverse' : ''}`}>
@@ -110,7 +73,7 @@ const JourneyMilestone = ({ icon: Icon, title, time, schedule, description, deta
                     <div className="bg-brand-accent/5 p-4 rounded-2xl border border-brand-accent/15">
                       <div className="flex items-center gap-2 mb-1">
                         <Zap size={12} className="text-brand-accent animate-pulse" />
-                        <span className="text-[15px] font-black text-brand-accent uppercase tracking-[0.2em] block">Case ao vivo</span>
+                        <span className="text-[15px] font-black text-brand-accent uppercase tracking-[0.2em] block">Case gravado</span>
                       </div>
                       <p className="text-[14px] font-medium text-[#070D0D]/80 italic leading-relaxed">"{caseExtra}"</p>
                     </div>
@@ -171,7 +134,6 @@ const PathNode = ({ icon: Icon, title, side = 'left', top, visible = true }: any
 );
 
 export default function App() {
-  const loteInfo = getLoteInfo();
   const [isScrolled, setIsScrolled] = useState(false);
   const [activeWordIndex, setActiveWordIndex] = useState(0);
   const [chatPhase, setChatPhase] = useState(0);
@@ -181,9 +143,6 @@ export default function App() {
   const containerRef = useRef<HTMLDivElement>(null);
   const urgencyBarRef = useRef<HTMLDivElement>(null);
   const [urgencyBarHeight, setUrgencyBarHeight] = useState(40);
-  const [showWaitlistModal, setShowWaitlistModal] = useState(false);
-  const [waitlistForm, setWaitlistForm] = useState({ nome: '', email: '', celular: '', descricao: '' });
-  const [waitlistStatus, setWaitlistStatus] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle');
   const { scrollYProgress } = useScroll({ target: containerRef, offset: ["start end", "end start"] });
   const pathLength = useTransform(scrollYProgress, [0, 1], [0, 1]);
 
@@ -249,52 +208,14 @@ export default function App() {
     }
   };
 
-  function closeWaitlistModal() {
-    setShowWaitlistModal(false);
-    setWaitlistStatus('idle');
-    setWaitlistForm({ nome: '', email: '', celular: '', descricao: '' });
-  }
-
-  async function submitWaitlist() {
-    const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(waitlistForm.email);
-    if (!waitlistForm.nome.trim() || !emailOk || waitlistForm.celular.replace(/\D/g, '').length < 10 || !waitlistForm.descricao.trim()) return;
-    setWaitlistStatus('submitting');
-    try {
-      const sheetUrl = process.env.WAITLIST_SHEET_URL;
-      if (sheetUrl) {
-        const url = new URL(sheetUrl);
-        url.searchParams.set('nome', waitlistForm.nome.trim());
-        url.searchParams.set('email', waitlistForm.email.trim());
-        url.searchParams.set('celular', waitlistForm.celular.trim());
-        url.searchParams.set('descricao', waitlistForm.descricao.trim());
-        await fetch(url.toString());
-      }
-      setWaitlistStatus('success');
-    } catch {
-      setWaitlistStatus('error');
-    }
-  }
-
   return (
     <div className="min-h-screen bg-[#042F34] relative selection:bg-brand-tag text-brand-text">
       {/* Urgency Bar */}
       <div className="urgency-bar" ref={urgencyBarRef}>
         <div className="urgency-bar__inner">
           <div className="urgency-bar__badge">
-            AO VIVO 06/06
+            GRAVAÇÃO DISPONÍVEL
           </div>
-          <div className="urgency-bar__progress">
-            <div className="urgency-bar__track">
-              <div className="urgency-bar__fill" style={{ width: `${loteInfo.percent}%` }} />
-            </div>
-            <span>
-              {loteInfo.percent}% vendidos | {loteInfo.lote}° Lote
-              <span className="urgency-bar__price"> — R$ {loteInfo.price}</span>
-            </span>
-          </div>
-          {loteInfo.nextPrice && (
-            <span className="urgency-bar__next">⚡ {loteInfo.lote + 1}° lote: R$ {loteInfo.nextPrice}</span>
-          )}
         </div>
       </div>
 
@@ -340,10 +261,12 @@ export default function App() {
           </div>
 
           <a
-            href="#preco"
+            href="https://pay.kiwify.com.br/DmP7zA1"
+            target="_blank"
+            rel="noopener noreferrer"
             className="bg-brand-accent hover:bg-brand-accent-hover text-white px-3 py-2 md:px-6 md:py-2.5 rounded-full text-sm md:text-base font-semibold transition-all shadow-lg shadow-brand-accent/20 active:scale-95 whitespace-nowrap"
           >
-            Garantir Vaga
+            Garantir Acesso
           </a>
         </div>
       </nav>
@@ -364,9 +287,14 @@ export default function App() {
                 <div className="bg-[#FFF7EC] px-5 py-2.5 rounded-full inline-flex items-center shadow-md shadow-black/20">
                   <img src="/claude_logo_complete.png" alt="Claude" className="h-7 md:h-8" />
                 </div>
-                <span className="inline-block bg-brand-tag text-brand-accent text-[10px] font-bold tracking-[0.2em] px-4 py-1.5 rounded-full uppercase border border-brand-accent/20">
-                  Workshop 100% Prático
-                </span>
+                <div className="flex flex-wrap justify-center md:justify-start gap-2">
+                  <span className="inline-block bg-brand-tag text-brand-accent text-[10px] font-bold tracking-[0.2em] px-4 py-1.5 rounded-full uppercase border border-brand-accent/20">
+                    Workshop Gravado 100% Prático
+                  </span>
+                  <span className="inline-block bg-brand-tag text-brand-accent text-[10px] font-bold tracking-[0.2em] px-4 py-1.5 rounded-full uppercase border border-brand-accent/20">
+                    Acesso imediato
+                  </span>
+                </div>
               </div>
               <h1 className="font-semibold text-5xl sm:text-6xl lg:text-8xl text-brand-text leading-[0.9] mb-2 tracking-tighter text-center md:text-left">
               Domine o Claude<br />
@@ -386,18 +314,19 @@ export default function App() {
                 </span>
               </h1>
 
-              <p className="text-brand-text/70 text-xl font-bold sm:text-xl md:text-2xl mb-12 max-w-lg leading-relaxed  text-center md:text-left mx-auto md:mx-0">
+              <p className="text-brand-text text-base font-normal sm:text-base md:text-lg mb-12 max-w-lg leading-relaxed  text-center md:text-left mx-auto md:mx-0">
                 Chat. Cowork. Code.<br></br><br></br>
-                Em 1 dia, você aprende as 3 camadas do Claude que 95% dos usuários nem sabem que existem.<br></br>
-                Sem frescura e com aplicações no seu trabalho.
+                Em 6 horas, você aprende as 3 camadas do Claude que 95% dos usuários nem sabem que existem.
               </p>
 
               <div className="flex flex-col sm:flex-row md:flex-col xl:flex-row gap-4 sm:gap-5 mb-14 px-4 sm:px-0">
                 <a
-                  href="#preco"
+                  href="https://pay.kiwify.com.br/DmP7zA1"
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="bg-brand-accent hover:bg-brand-accent-hover text-white px-8 py-4 sm:py-5 rounded-full text-base sm:text-lg font-bold flex items-center justify-center gap-3 transition-all shadow-2xl shadow-brand-accent/30 hover:scale-105 active:scale-95 w-full sm:w-auto md:w-full xl:w-auto"
                 >
-                  Quero minha vaga <ArrowRight size={20} />
+                  Quero meu acesso <ArrowRight size={20} />
                 </a>
                 <a
                   href="#programacao"
@@ -405,13 +334,6 @@ export default function App() {
                 >
                   Ver programação
                 </a>
-              </div>
-
-              <div className="flex flex-wrap justify-center md:justify-start gap-y-4 gap-x-8 text-[10px] sm:text-[11px] sm:text-lg font-bold text-brand-text opacity-40 tracking-[0.1em] uppercase">
-                <span className="flex items-center gap-2.5">📅 Online ao vivo</span>
-                <span className="flex items-center gap-2.5">⏰ 10h às 18h</span>
-                <span className="flex items-center gap-2.5">🎯 100% Prático</span>
-                <span className="flex items-center gap-2.5">✅ Replay disponível</span>
               </div>
 
               {/* Social proof */}
@@ -436,14 +358,10 @@ export default function App() {
                       +
                     </div>
                   </div>
-                  <p className="text-sm text-brand-text/60 leading-snug">
+                  <p className="text-sm text-brand-text/80 leading-snug">
                     <span className="font-bold text-brand-text">+ de 1.000 pessoas</span> na comunidade IA Sem Frescura
                   </p>
                 </div>
-                <p className="text-xs text-brand-text/35 flex items-center gap-1.5">
-                  <Check size={11} className="text-brand-accent shrink-0" />
-                  assim que a gravação estiver disponível, você recebe primeiro.
-                </p>
               </div>
             </motion.div>
 
@@ -571,49 +489,6 @@ export default function App() {
           </div>
         </section>
 
-        {/* "Para Quem É" Section */}
-        <section id="para-quem" className="py-24 bg-[#FFF7EC]">
-          <div className="max-w-7xl mx-auto px-6">
-            <motion.div
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true }}
-              variants={revealVariants}
-              className="text-center mb-16"
-            >
-              <span className="inline-block px-3 py-1 bg-[#042F34] text-[#B5F2DB] text-xs font-bold tracking-widest rounded-full mb-4 border border-brand-accent/20 uppercase">
-                PARA QUEM É
-              </span>
-              <h2 className="text-4xl md:text-5xl font-semibold text-[#070D0D] mb-4 tracking-tight">Você está no lugar certo se...</h2>
-            </motion.div>
-
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {[
-                "Usa o Claude (ou outra IA) só no modo chat e sabe que dá pra fazer mais",
-                "Perde tempo repetindo tarefas manuais que o Claude automatizaria em minutos",
-                "Já tentou criar algo mais avançado mas travou nos limites da ferramenta",
-                "Quer que a IA execute tarefas por você, não só responda perguntas",
-                "Precisa processar documentos, planilhas ou arquivos sem fazer tudo na mão",
-                "Ouve falar de Cowork, Code e Skills mas não sabe por onde começar"
-              ].map((item, i) => (
-                <motion.div
-                  key={i}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: i * 0.1 }}
-                  className="bg-[#E4EEF0]/5 p-8 rounded-2xl hover:bg-[#070D0D]/10 hover:translate-y-[-4px] transition-all flex items-start gap-4 border border-[#070D0D]/10"
-                >
-                  <div className="bg-[#042F34]  p-1.5 rounded-full text-[#B5F2DB] mt-1">
-                    <Check size={18} strokeWidth={3} />
-                  </div>
-                  <p className="text-lg font-medium text-[#070D0D] leading-tight">{item}</p>
-                </motion.div>
-              ))}
-            </div>
-          </div>
-        </section>
-
         {/* "O Que Você Vai Construir" Section */}
         <section id="workshop" className="py-24 bg-[#0A0F0F] relative overflow-hidden">
           <StarsBackground className="absolute inset-0 w-full h-full pointer-events-none opacity-60" starColor="#FFF7EC" starCount={600} />
@@ -626,7 +501,7 @@ export default function App() {
               className="text-center mb-16"
             >
               <span className="inline-block px-3 py-1 bg-brand-tag text-brand-accent text-xs font-bold tracking-widest rounded-full mb-4 border border-brand-accent/20 uppercase">
-                NO DIA DO WORKSHOP
+                ASSISTINDO À GRAVAÇÃO
               </span>
               <h2 className="text-4xl md:text-5xl font-semibold text-white mb-4 tracking-tight">Você sai com isso pronto:</h2>
             </motion.div>
@@ -636,7 +511,7 @@ export default function App() {
                 {
                   id: "01",
                   title: "Claude Chat dominado",
-                  desc: "Projetos, artefatos, plugins, memória — tudo que o chat oferece e você ainda não usa."
+                  desc: "Projetos, artefatos, plugins, memória. Tudo que o chat oferece e você ainda não usa."
                 },
                 {
                   id: "02",
@@ -676,7 +551,7 @@ export default function App() {
           </div>
         </section>
 
-        {/* Programação — Journey Path */}
+        {/* Programação (Journey Path) */}
         <section id="programacao" className="py-32 bg-[#FFF7EC] relative overflow-hidden">
           {/* Background Elements */}
           <div className="absolute inset-x-0 bottom-0 h-1/2 bg-linear-to-t from-brand-accent/5 to-transparent pointer-events-none" />
@@ -700,11 +575,7 @@ export default function App() {
               <div className="flex flex-wrap items-center justify-center gap-3">
                 <div className="flex items-center gap-2 bg-[#042F34] border border-brand-accent/25 px-5 py-2.5 rounded-full shadow-sm">
                   <Calendar size={15} className="text-[#B5F2DB]" />
-                  <span className="text-sm font-semibold text-[#B5F2DB] tracking-tight">6 de Junho, 2026</span>
-                </div>
-                <div className="flex items-center gap-2 bg-[#042F34] border border-brand-accent/25 px-5 py-2.5 rounded-full shadow-sm">
-                  <Clock size={15} className="text-[#B5F2DB]" />
-                  <span className="text-sm font-semibold text-[#B5F2DB] tracking-tight">10h às 18h · Online ao vivo</span>
+                  <span className="text-sm font-semibold text-[#B5F2DB] tracking-tight">Gravado em 6 de Junho, 2026</span>
                 </div>
               </div>
             </motion.div>
@@ -781,8 +652,7 @@ export default function App() {
               {/* Milestones */}
               <div className="relative flex flex-col pt-10">
                 <JourneyMilestone
-                  time="Módulo 1 — Claude Chat"
-                  schedule="10h00 → 12h00"
+                  time="Módulo 1: Claude Chat"
                   icon={MessageSquare}
                   title="Você pergunta. Ele responde."
                   description="Dominando a plataforma inteira: Projetos, artefatos e plugins. Pare de usar apenas 10% do potencial do Claude."
@@ -799,8 +669,7 @@ export default function App() {
                 />
 
                 <JourneyMilestone
-                  time="Módulo 2 — Claude Cowork"
-                  schedule="14h00 → 15h00"
+                  time="Módulo 2: Claude Cowork"
                   icon={Users}
                   title="Você pede. O Claude executa."
                   description="O Claude sai do navegador e entra no seu computador. Acesso a arquivos locais e tarefas sem supervisão manual."
@@ -808,7 +677,7 @@ export default function App() {
                    { label: "Setup", desc: "Configure o Cowork com acesso às pastas e ferramentas do seu trabalho", icon: Zap },
                   { label: "Processamento", desc: "Cruze dados de múltiplas planilhas e gere relatórios consolidados automaticamente", icon: Layout },
                   { label: "Tarefas autônomas", desc: "O Claude executa sequências de ações no seu computador enquanto você faz outra coisa", icon: Check },
-                  { label: "Rotinas sob demanda", desc: "Crie comandos que disparam fluxos inteiros — pesquisa, síntese e entrega — com uma instrução", icon: ArrowRight }
+                  { label: "Rotinas sob demanda", desc: "Crie comandos que disparam fluxos inteiros de pesquisa, síntese e entrega com uma instrução", icon: ArrowRight }
                   ]}
                   caseExtra="Automação real que substitui um processo manual da sua rotina."
                   side="right"
@@ -817,8 +686,7 @@ export default function App() {
                 />
 
                 <JourneyMilestone
-                  time="Módulo 3 — Claude Code"
-                  schedule="15h00 → 17h30"
+                  time="Módulo 3: Claude Code"
                   icon={Terminal}
                   title="Você planeja. Ele constrói."
                   description="Criação de aplicações, scripts e sistemas direto do terminal. Não precisa ser programador, precisa saber pedir."
@@ -835,8 +703,7 @@ export default function App() {
                 />
 
                 <JourneyMilestone
-                  time="Bônus — Economia de Tokens"
-                  schedule="17h30 → 18h00"
+                  time="Bônus: Economia de Tokens"
                   icon={Zap}
                   title="O módulo que se paga sozinho"
                   description="Como dominar o consumo de tokens e fazer sua assinatura render 5x mais com as estratégias certas."
@@ -863,9 +730,9 @@ export default function App() {
               <div className="w-64 absolute -top-6 left-1/2 -translate-x-1/2 bg-brand-accent text-white px-6 py-2 rounded-full text-xs font-bold uppercase tracking-widest shadow-xl">
                 O Resultado Final
               </div>
-              <h3 className="text-3xl md:text-5xl font-semibold text-white mb-4 tracking-tight">Você não vai só assistir. Vai sair diferente de como entrou.</h3>
+              <h3 className="text-3xl md:text-5xl font-semibold text-white mb-4 tracking-tight">Você não vai só assistir. Vai colocar em prática.</h3>
               <p className="text-brand-text/60 max-w-2xl mx-auto text-lg leading-relaxed">
-                Ao final desta jornada, você não apenas terá assistido a uma aula. Você terá construído, automatizado e economizado. Seu negócio terá uma nova camada de inteligência funcional.</p>
+                Ao final desta jornada, você não apenas terá assistido a uma aula. Você terá construído, automatizado e economizado.</p>
             </motion.div>
           </div>
         </section>
@@ -886,7 +753,7 @@ export default function App() {
                 </span>
                 <h2 className="text-4xl md:text-6xl font-semibold text-white mb-6 tracking-tight">Seus mentores nessa imersão</h2>
                 <p className="text-white/50 max-w-2xl mx-auto text-base md:text-lg leading-relaxed px-4">
-                  Experiência real com pesquisa e construção de produtos de IA que escalam.
+                  Experiência real com aplicações e construções de produtos de IA que escalam.
                 </p>
               </motion.div>
 
@@ -909,7 +776,7 @@ export default function App() {
                         {[
                           "Engenheiro Mecânico pela UFPR (1° lugar da turma)",
                           "Pós graduado em IA pela FIAP",
-                          "Intercâmbio na RWTH - Alemanha",
+                          "Intercâmbio na RWTH, Alemanha",
                           "AI Assistant no Fraunhofer IPT (Instituto Alemão)"
                         ].map((bullet, i) => (
                           <li key={i} className="flex items-start gap-3 text-white/80 leading-snug font-medium">
@@ -939,7 +806,7 @@ export default function App() {
                       <ul className="space-y-4 text-left">
                         {[
                           "Engenheiro Mecânico pela UFPR (3° lugar da turma)",
-                          "Intercâmbio na RWTH - Alemanha",
+                          "Intercâmbio na RWTH, Alemanha",
                           "Manufacturing Assistant no Fraunhofer IPT (Instituto Alemão)",
                           "Co-founder Dinno.chat"
                         ].map((bullet, i) => (
@@ -970,14 +837,25 @@ export default function App() {
                 DEPOIMENTOS
               </span>
               <h2 className="text-4xl md:text-5xl font-semibold text-[#070D0D] mb-3 tracking-tight">O que estão falando</h2>
-              <p className="text-[#070D0D] text-lg">Prints direto do WhatsApp — sem edição, sem roteiro.</p>
+              <p className="text-[#070D0D] text-lg">Prints direto do WhatsApp, sem edição, sem roteiro.</p>
             </motion.div>
           </div>
 
-          <div className="space-y-20">
+          <div className="space-y-2">
             {depoimentoRows.map((row, rowIndex) => (
-              <div key={rowIndex} className="overflow-hidden py-2">
-                <div className={`flex gap-6 px-2 items-start ${rowIndex === 0 ? 'testimonials-track-left' : 'testimonials-track-right'}`}>
+              <div
+                key={rowIndex}
+                className="overflow-hidden py-12"
+                style={{
+                  WebkitMaskImage:
+                    'linear-gradient(to right, transparent, #000 12%, #000 88%, transparent), linear-gradient(to bottom, transparent, #000 12%, #000 88%, transparent)',
+                  maskImage:
+                    'linear-gradient(to right, transparent, #000 12%, #000 88%, transparent), linear-gradient(to bottom, transparent, #000 12%, #000 88%, transparent)',
+                  WebkitMaskComposite: 'source-in',
+                  maskComposite: 'intersect',
+                }}
+              >
+                <div className={`flex gap-6 px-2 items-center ${rowIndex === 0 ? 'testimonials-track-left' : 'testimonials-track-right'}`}>
                   {[...row, ...row].map((item, i) => (
                     <div
                       key={i}
@@ -987,7 +865,7 @@ export default function App() {
                       <img
                         src={item.src}
                         alt="Depoimento"
-                        className="w-[300px] sm:w-[360px] h-auto block"
+                        className="w-[300px] sm:w-[340px] h-auto block"
                         draggable={false}
                       />
                     </div>
@@ -1008,54 +886,25 @@ export default function App() {
               viewport={{ once: true }}
               variants={revealVariants}
             >
-              <h2 className="text-5xl md:text-6xl font-semibold mb-16 text-white tracking-tight">Garanta sua vaga</h2>
+              <h2 className="text-5xl md:text-6xl font-semibold mb-16 text-white tracking-tight">Garanta seu acesso</h2>
 
-              {/* Two-card layout */}
-              <div className="flex flex-col md:flex-row items-stretch gap-6 max-w-5xl mx-auto mb-10">
+              <div className="flex items-stretch gap-6 max-w-md mx-auto mb-10">
 
-                {/* Card 1 — Workshop */}
+                {/* Card Workshop */}
                 <div className="flex-1 w-full bg-white text-[#070D0D] p-8 rounded-3xl relative shadow-xl shadow-black/30 border border-white/10 flex flex-col transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl hover:shadow-black/40">
                   <span className="absolute -top-4 left-1/2 -translate-x-1/2 bg-white text-[#070D0D] border border-[#070D0D]/10 px-4 py-1.5 rounded-full text-[10px] font-bold tracking-[0.3em] uppercase shadow-lg whitespace-nowrap">
-                    Workshop
+                    Workshop Gravado
                   </span>
 
-                  {/* Lote badge */}
-                  <div className="flex items-center justify-center gap-2 mt-2 mb-3">
-                    <span className="bg-[#042F34] text-[#B5F2DB] text-[10px] font-bold tracking-[0.2em] uppercase px-3 py-1 rounded-full">
-                      {loteInfo.lote}° Lote
-                    </span>
-                    {loteInfo.nextPrice && (
-                      <span className="text-[10px] text-[#070D0D]/45 font-medium">próximo: R$ {loteInfo.nextPrice}</span>
-                    )}
-                  </div>
-
-                  <div className="flex flex-wrap items-center justify-center gap-3 mb-3">
-                    <span className="text-4xl font-bold text-brand-accent">R$ {loteInfo.price}</span>
-                  </div>
-
-                  {/* Progress bar */}
-                  <div className="mb-2">
-                    <div className="flex justify-between items-center mb-1.5">
-                      <span className="text-[11px] text-[#070D0D]/50 font-medium">{loteInfo.percent}% dos ingressos vendidos</span>
-                      <span className="text-[11px] text-[#042F34] font-bold">{100 - loteInfo.percent}% restantes</span>
-                    </div>
-                    <div className="w-full h-2 bg-[#070D0D]/10 rounded-full overflow-hidden">
-                      <div
-                        className="h-full rounded-full"
-                        style={{
-                          width: `${loteInfo.percent}%`,
-                          background: 'linear-gradient(90deg, #042F34, #B5F2DB)',
-                          transition: 'width 1s ease',
-                        }}
-                      />
-                    </div>
+                  <div className="flex flex-wrap items-center justify-center gap-3 mt-4 mb-3">
+                    <span className="text-4xl font-bold text-brand-accent">R$ 97,90</span>
                   </div>
 
                   <hr className="mb-6 mt-4 border-[#070D0D]/10" />
 
                   <ul className="text-left space-y-3 text-sm flex-1">
                     <li className="flex items-center gap-3 text-[#070D0D] font-medium">
-                      <Check size={16} className="text-brand-accent shrink-0" strokeWidth={3} /> 6h de treinamento ao vivo
+                      <Check size={16} className="text-brand-accent shrink-0" strokeWidth={3} /> 6h de treinamento gravado
                     </li>
                     <li className="flex items-center gap-3 text-[#070D0D] font-medium">
                       <Check size={16} className="text-brand-accent shrink-0" strokeWidth={3} /> Gravação por 12 meses
@@ -1067,109 +916,21 @@ export default function App() {
                       <Check size={16} className="text-brand-accent shrink-0" strokeWidth={3} /> Cases práticos com I.A
                     </li>
                     <li className="flex items-center gap-3 text-[#070D0D] font-medium">
-                      <Check size={16} className="text-brand-accent shrink-0" strokeWidth={3} /> Automações construídas ao vivo
+                      <Check size={16} className="text-brand-accent shrink-0" strokeWidth={3} /> Automações construídas passo a passo
                     </li>
                     <li className="flex items-center gap-3 text-[#070D0D] font-medium">
-                      <Check size={16} className="text-brand-accent shrink-0" strokeWidth={3} /> Projetos funcionais no dia
+                      <Check size={16} className="text-brand-accent shrink-0" strokeWidth={3} /> Projetos funcionais prontos
                     </li>
                   </ul>
 
                   <div className="mt-auto pt-8">
-                    <a href="https://pay.kiwify.com.br/gAtiUyD" target="_blank" rel="noopener noreferrer" className="w-full bg-brand-accent hover:bg-brand-accent-hover text-white py-4 rounded-2xl font-bold transition-all shadow-lg shadow-brand-accent/20 flex items-center justify-center gap-2 active:scale-95">
-                      Quero o ingresso <ArrowRight size={18} />
+                    <a href="https://pay.kiwify.com.br/DmP7zA1" target="_blank" rel="noopener noreferrer" className="w-full bg-brand-accent hover:bg-brand-accent-hover text-white py-4 rounded-2xl font-bold transition-all shadow-lg shadow-brand-accent/20 flex items-center justify-center gap-2 active:scale-95">
+                      Quero meu acesso <ArrowRight size={18} />
                     </a>
                     <p className="mt-3 text-[11px] text-[#070D0D]/35 text-center">Pagamento seguro · Garantia de 7 dias</p>
                   </div>
                 </div>
-
-                {/* Card 2 — Workshop + Mentoria */}
-                <div className={`flex-1 w-full bg-brand-tag text-[#042F34] rounded-3xl relative shadow-2xl border flex flex-col transition-all duration-300 overflow-hidden ${MENTORIA_ESGOTADA ? 'border-[#042F34]/10 shadow-black/10' : 'shadow-brand-accent/10 border-brand-accent/20 hover:-translate-y-2 hover:shadow-2xl hover:shadow-brand-accent/20'}`}>
-                  {/* Conteúdo do card — fica cinza quando esgotado */}
-                  <div className={`p-8 flex flex-col flex-1 ${MENTORIA_ESGOTADA ? 'opacity-60 grayscale select-none' : ''}`}>
-                    <span className={`self-center -mt-4 mb-4 px-4 py-1.5 rounded-full text-[10px] font-bold tracking-[0.3em] uppercase shadow-lg whitespace-nowrap ${MENTORIA_ESGOTADA ? 'bg-[#042F34]/40 text-white/70' : 'bg-brand-accent text-white'}`}>
-                      {MENTORIA_ESGOTADA ? 'Esgotado' : 'Mentoria'}
-                    </span>
-
-                    {/* Vagas limitadas */}
-                    <div className="mb-4">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-[10px] font-black text-[#042F34] uppercase tracking-[0.2em]">Vagas limitadas</span>
-                        <span className="text-[10px] font-bold text-[#042F34]/70">
-                          {MENTORIA_VAGAS_TOTAL - MENTORIA_VAGAS_PREENCHIDAS} de {MENTORIA_VAGAS_TOTAL} restantes
-                        </span>
-                      </div>
-                      <div className="flex gap-[3px] flex-wrap mb-1.5">
-                        {Array.from({ length: MENTORIA_VAGAS_TOTAL }).map((_, i) => (
-                          <div
-                            key={i}
-                            className={`h-3 rounded-[2px] flex-1 ${i < MENTORIA_VAGAS_PREENCHIDAS ? 'bg-[#042F34]' : 'bg-[#042F34]/15'}`}
-                          />
-                        ))}
-                      </div>
-                      <p className="text-[10px] text-[#042F34]/55 font-medium text-right">
-                        {MENTORIA_VAGAS_PREENCHIDAS} vagas preenchidas
-                      </p>
-                    </div>
-
-                    <div className="flex items-center justify-center gap-3 mb-1">
-                      <span className="text-4xl font-bold text-brand-accent">R$ 297</span>
-                    </div>
-                    <p className="text-[#042F34]/50 text-[12px] text-center mb-6">Workshop + 2 encontros de mentoria</p>
-
-                    <hr className="mb-6 border-[#042F34]/20" />
-
-                    <ul className="text-left space-y-3 text-sm flex-1">
-                      <li className="flex items-start gap-3 text-[#042F34] font-bold">
-                        <Check size={16} className="text-brand-accent shrink-0 mt-0.5" strokeWidth={3} /> Tudo do Ingresso, mais:
-                      </li>
-                      <li className="flex items-start gap-3 text-[#042F34]/75 font-medium">
-                        <Check size={16} className="text-brand-accent shrink-0 mt-0.5" strokeWidth={3} /> 2 encontros ao vivo de 1h com mentor
-                      </li>
-                      <li className="flex items-start gap-3 text-[#042F34]/75 font-medium">
-                        <Check size={16} className="text-brand-accent shrink-0 mt-0.5" strokeWidth={3} /> Aplicação direta no seu negócio
-                      </li>
-                      <li className="flex items-start gap-3 text-[#042F34]/75 font-medium">
-                        <Check size={16} className="text-brand-accent shrink-0 mt-0.5" strokeWidth={3} /> Revisão dos seus prompts e automações
-                      </li>
-                      <li className="flex items-start gap-3 text-[#042F34]/75 font-medium">
-                        <Check size={16} className="text-brand-accent shrink-0 mt-0.5" strokeWidth={3} /> Acesso direto via WhatsApp
-                      </li>
-                      <li className="flex items-start gap-3 text-[#042F34]/75 font-medium">
-                        <Check size={16} className="text-brand-accent shrink-0 mt-0.5" strokeWidth={3} /> Plano de implementação personalizado
-                      </li>
-                    </ul>
-
-                    {!MENTORIA_ESGOTADA && (
-                      <div className="mt-auto pt-8">
-                        <a href="https://pay.kiwify.com.br/ez6cNqF" target="_blank" rel="noopener noreferrer" className="w-full bg-brand-accent hover:bg-brand-accent-hover text-white py-5 rounded-2xl text-lg font-bold transition-all shadow-xl shadow-brand-accent/30 flex items-center justify-center gap-2 active:scale-95">
-                          Quero Workshop + Mentoria <ArrowRight size={20} />
-                        </a>
-                        <p className="mt-3 text-[11px] text-[#042F34]/50 text-center">Pagamento seguro · Garantia de 7 dias · Vagas limitadas</p>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Seção lista de espera — fora do grayscale, só aparece quando esgotado */}
-                  {MENTORIA_ESGOTADA && (
-                    <div className="px-8 pb-8 pt-5 border-t border-[#042F34]/15">
-                      <p className="text-[#042F34]/65 text-[13px] leading-snug mb-4 text-center">
-                        As vagas estão esgotadas — mas você pode entrar na lista de espera e entraremos em contato quando houver novas vagas.
-                      </p>
-                      <button
-                        onClick={() => setShowWaitlistModal(true)}
-                        className="w-full bg-[#042F34] text-white py-4 rounded-2xl font-bold text-base transition-all shadow-lg shadow-[#042F34]/20 hover:bg-[#042F34]/90 active:scale-95 flex items-center justify-center gap-2"
-                      >
-                        Entrar na lista de espera <ArrowRight size={18} />
-                      </button>
-                    </div>
-                  )}
-                </div>
               </div>
-
-              {/* Below both cards */}
-              <p className="text-sm text-white/40 text-center max-w-md mx-auto leading-relaxed">
-                🔒 Garantia incondicional de 7 dias. Se não for o que esperava, devolvemos 100% — sem perguntas.
-              </p>
             </motion.div>
           </div>
         </section>
@@ -1181,17 +942,11 @@ export default function App() {
 
             <div className="space-y-4">
               {[
-                { q: "Preciso saber programar para participar?", a: "Não. O módulo de Code ensina do zero, desde instalar o terminal até rodar seu primeiro projeto. Quem já programa vai aproveitar os módulos avançados de Skills e integrações." },
-                { q: "O workshop é ao vivo ou gravado?", a: "Ao vivo, com interação em tempo real. A gravação fica disponível por 12 meses para você revisitar qualquer módulo." },
+                { q: "Preciso saber programar?", a: "Não. O módulo de Code ensina do zero, desde instalar o terminal até rodar seu primeiro projeto. Quem já programa vai aproveitar os módulos avançados de Skills e integrações." },
                 { q: "Funciona para qualquer tipo de negócio?", a: "Sim. Os recursos do Claude (Chat, Cowork e Code) se aplicam a qualquer área. No workshop, usamos exemplos de gestão, conteúdo, vendas, operações e análise de dados." },
                 { q: "Qual plano do Claude preciso ter?", a: "O plano gratuito funciona para acompanhar o módulo de Chat. Para Cowork e Code, o plano Pro é recomendado. No módulo de tokens, ensinamos como fazer o Pro render a semana inteira." },
                 { q: "E se eu não gostar?", a: "Garantia total de 7 dias. Sem perguntas, sem burocracia." },
-                { q: "Qual a diferença entre Chat, Cowork e Code?", a: "Chat é a interface web que você já conhece. Cowork é o Claude operando direto no seu computador, acessando seus arquivos e executando tarefas. Code é o Claude no terminal, onde ele constrói aplicações, instala skills e se conecta a APIs." },
-                { q: "Eu já uso o Claude no chat todo dia. Vai ter conteúdo pra mim?", a: "Com certeza. O módulo de Chat cobre recursos avançados que a maioria não usa: Projects, artefatos interativos, plugins com Google Drive e Gmail. E os módulos de Cowork e Code são território novo pra 95% dos usuários." },
-                { q: "Preciso ter Mac ou funciona no Windows?", a: "Funciona nos dois. No workshop, cobrimos a instalação e configuração para ambos os sistemas operacionais." },
-                { q: "Vou sair com algo funcionando ou é só teoria?", a: "Cada módulo tem aplicação prática. Você vai configurar Projects, conectar plugins, rodar automações no Cowork e construir algo funcional no Code. Tudo durante o workshop." },
-                { q: "Posso usar o que aprendi com outras IAs além do Claude?", a: "Os fundamentos de prompt, estrutura de contexto e lógica de automação se aplicam a qualquer modelo. Mas os módulos de Cowork, Code e Skills são exclusivos do ecossistema Claude — e são justamente o diferencial do workshop." },
-                { q: "Meus tokens vão acabar durante o workshop?", a: "Improvável. No início, ensinamos as configurações que otimizam o consumo. E as práticas são pensadas pra não estourar seu plano no processo." }
+                { q: "Eu já uso o Claude no chat todo dia. Vai ter conteúdo pra mim?", a: "Com certeza. O módulo de Chat cobre recursos avançados que a maioria não usa: Projects, artefatos interativos, plugins com Google Drive e Gmail. E os módulos de Cowork e Code são território novo pra 95% dos usuários." }
               ].map((item, i) => (
                 <details key={i} className="group bg-white/5 border border-white/10 rounded-2xl overflow-hidden transition-all">
                   <summary className="flex items-center justify-between p-6 cursor-pointer list-none">
@@ -1221,124 +976,16 @@ export default function App() {
               <div className="relative z-10 px-4">
                 <h2 className="text-4xl sm:text-5xl md:text-7xl font-semibold mb-6 leading-tight tracking-tighter">Claude Sem Frescura.<br />Resultado de verdade.</h2>
                 <p className="text-white/80 text-lg sm:text-xl font-medium mb-12 max-w-xl mx-auto">
-                  Uma vaga. Um dia. Uma mudança real no seu negócio.
+                  Acesso imediato. No seu ritmo. Uma mudança real no seu negócio.
                 </p>
-                <a href="#preco" className="inline-block bg-white text-brand-accent hover:bg-neutral-100 px-8 sm:px-12 py-4 sm:py-5 rounded-full text-xl sm:text-2xl font-bold transition-all shadow-2xl active:scale-95 w-full sm:w-auto text-center">
-                  Garantir minha vaga →
+                <a href="https://pay.kiwify.com.br/DmP7zA1" target="_blank" rel="noopener noreferrer" className="inline-block bg-white text-brand-accent hover:bg-neutral-100 px-8 sm:px-12 py-4 sm:py-5 rounded-full text-xl sm:text-2xl font-bold transition-all shadow-2xl active:scale-95 w-full sm:w-auto text-center">
+                  Quero meu acesso →
                 </a>
               </div>
             </motion.div>
           </div>
         </section>
       </main>
-
-      {/* Modal — Lista de Espera Mentoria */}
-      <AnimatePresence>
-        {showWaitlistModal && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[200] flex items-center justify-center p-4"
-            onClick={(e) => { if (e.target === e.currentTarget) closeWaitlistModal(); }}
-          >
-            <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 16 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 16 }}
-              transition={{ duration: 0.25, ease: [0.23, 1, 0.32, 1] }}
-              className="relative w-full max-w-md bg-brand-tag rounded-3xl p-8 shadow-2xl"
-            >
-              <button
-                onClick={closeWaitlistModal}
-                className="absolute top-5 right-5 w-8 h-8 flex items-center justify-center rounded-full bg-[#042F34]/10 hover:bg-[#042F34]/20 text-[#042F34] transition-colors"
-                aria-label="Fechar"
-              >
-                ✕
-              </button>
-
-              {waitlistStatus === 'success' ? (
-                <div className="text-center py-6">
-                  <div className="text-4xl mb-4">✅</div>
-                  <h3 className="text-xl font-bold text-[#042F34] mb-2">Você está na lista!</h3>
-                  <p className="text-[#042F34]/65 text-sm leading-relaxed mb-6">
-                    Recebemos sua candidatura. Entraremos em contato pelo e-mail ou celular informados quando abrirmos novas vagas de mentoria.
-                  </p>
-                  <button
-                    onClick={closeWaitlistModal}
-                    className="w-full bg-[#042F34] text-white py-3 rounded-2xl font-bold transition-all hover:bg-[#042F34]/90 active:scale-95"
-                  >
-                    Fechar
-                  </button>
-                </div>
-              ) : (
-                <>
-                  <h3 className="text-xl font-bold text-[#042F34] mb-1">Lista de espera — Mentoria</h3>
-                  <p className="text-[#042F34]/60 text-sm mb-6 leading-snug">
-                    Preencha seus dados abaixo. Quando abrirmos novas vagas, entraremos em contato com você.
-                  </p>
-
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-[11px] font-black text-[#042F34] uppercase tracking-[0.15em] mb-1.5">Nome completo</label>
-                      <input
-                        type="text"
-                        value={waitlistForm.nome}
-                        onChange={(e) => setWaitlistForm(f => ({ ...f, nome: e.target.value }))}
-                        placeholder="Seu nome"
-                        className="w-full bg-white/70 border border-[#042F34]/15 rounded-xl px-4 py-3 text-[#042F34] placeholder-[#042F34]/35 text-sm focus:outline-none focus:border-[#042F34]/40 focus:bg-white transition-colors"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[11px] font-black text-[#042F34] uppercase tracking-[0.15em] mb-1.5">E-mail</label>
-                      <input
-                        type="email"
-                        value={waitlistForm.email}
-                        onChange={(e) => setWaitlistForm(f => ({ ...f, email: e.target.value }))}
-                        placeholder="seu@email.com"
-                        className="w-full bg-white/70 border border-[#042F34]/15 rounded-xl px-4 py-3 text-[#042F34] placeholder-[#042F34]/35 text-sm focus:outline-none focus:border-[#042F34]/40 focus:bg-white transition-colors"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[11px] font-black text-[#042F34] uppercase tracking-[0.15em] mb-1.5">Número de celular</label>
-                      <input
-                        type="tel"
-                        value={waitlistForm.celular}
-                        onChange={(e) => setWaitlistForm(f => ({ ...f, celular: e.target.value }))}
-                        placeholder="(11) 99999-9999"
-                        className="w-full bg-white/70 border border-[#042F34]/15 rounded-xl px-4 py-3 text-[#042F34] placeholder-[#042F34]/35 text-sm focus:outline-none focus:border-[#042F34]/40 focus:bg-white transition-colors"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[11px] font-black text-[#042F34] uppercase tracking-[0.15em] mb-1.5">Objetivo com a mentoria</label>
-                      <textarea
-                        value={waitlistForm.descricao}
-                        onChange={(e) => setWaitlistForm(f => ({ ...f, descricao: e.target.value }))}
-                        placeholder="Descreva brevemente o que você quer resolver ou construir com a ajuda da mentoria..."
-                        rows={3}
-                        className="w-full bg-white/70 border border-[#042F34]/15 rounded-xl px-4 py-3 text-[#042F34] placeholder-[#042F34]/35 text-sm focus:outline-none focus:border-[#042F34]/40 focus:bg-white transition-colors resize-none"
-                      />
-                    </div>
-                  </div>
-
-                  {waitlistStatus === 'error' && (
-                    <p className="text-red-600 text-xs mt-3 text-center">Algo deu errado. Tente novamente.</p>
-                  )}
-
-                  <button
-                    onClick={submitWaitlist}
-                    disabled={waitlistStatus === 'submitting'}
-                    className="w-full mt-6 bg-[#042F34] text-white py-4 rounded-2xl font-bold text-base transition-all shadow-lg shadow-[#042F34]/20 hover:bg-[#042F34]/90 active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                  >
-                    {waitlistStatus === 'submitting' ? 'Enviando...' : <>Aplicar para a lista de espera <ArrowRight size={18} /></>}
-                  </button>
-                </>
-              )}
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
 
       <footer className="py-12 bg-[#070D0D] border-t border-white/5">
         <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-6 text-[10px] font-bold tracking-[0.2em] uppercase text-white/50">
